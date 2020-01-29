@@ -311,6 +311,12 @@
 		"/TilemapCPP.bin.2.h": {
 			"sdcard": false
 		},
+		"/Tilemap_2.elf": {
+			"sdcard": false
+		},
+		"/Tilemap_2.bin": {
+			"sdcard": false
+		},
 		"/Tilemap_3.elf": {
 			"sdcard": false
 		},

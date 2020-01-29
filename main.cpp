@@ -28,8 +28,6 @@ namespace Constants {
     const uint16_t screenCentreX = PD::width / 2; 
     const uint16_t screenCentreY = PD::height / 2;
 
-    const uint16_t numberOfEnemies = 3;
-    
 }
 
 
@@ -39,11 +37,11 @@ namespace Constants {
 
 enum TileType {
     
-	Water = 8,
-	Grass = 4,
-	Tree = 5,
-	Green = 11,
-	
+	Water = 0,
+	Green = 1,
+	Tree = 2,
+	Grass = 3,
+
 }; 
 
 
@@ -78,31 +76,13 @@ struct Entity {
 
 Tilemap tilemap;
 Entity player;
-Entity enemies[Constants::numberOfEnemies];
-
-
-
-// ---------------------------------------------------------------------------------------
-//
-//  Do the two entities overlap?
-//
-bool collide(Entity player, Entity enemy) {
-
-    return !(enemy.x                >= player.getPositionInMapX() + player.width  ||
-             enemy.x + enemy.width  <= player.getPositionInMapX()                 ||
-             enemy.y                >= player.getPositionInMapY() + player.height ||
-             enemy.y + enemy.height <= player.getPositionInMapY());
-
-}
-    
-
 
 
 // ---------------------------------------------------------------------------------------
 //
 //  Check to see if the move the entity is about to make is into a green (empty) tile.  As 
-//  the player and enemy tiles are 12 x 15 pixels and the tiles are bigger (16 x 16) its 
-//  possible that the entity could be straddling two tiles in either direction ..
+//  the player is 12 x 15 pixels and the tiles are bigger (16 x 16) its possible that the 
+//  player could be straddling two tiles in either direction ..
 //
 bool checkMovement(Entity &entity, int16_t x, int16_t y, Direction direction) {
 
@@ -295,63 +275,6 @@ void handlePlayerMovements() {
 }
 
 
-
-
-// ---------------------------------------------------------------------------------------
-//
-//  Handle the enemy movements ..
-//
-void handleEnemyMovements() {
-
-
-    // Where is the player currently ?
-    
-    int16_t playerPositionInMapX = player.getPositionInMapX();
-    int16_t playerPositionInMapY = player.getPositionInMapY();
-    
-    
-    // Move each enemy individually ..
-    
-    for (uint8_t i = 0; i < Constants::numberOfEnemies; i++) {
-
-        if (playerPositionInMapX < enemies[i].x) {
-
-            if (checkMovement(enemies[i], enemies[i].x - 1, enemies[i].y, Direction::Left)) {
-                enemies[i].x--;
-            }
-            
-        }
-        
-        if (playerPositionInMapX > enemies[i].x) {
-
-            if (checkMovement(enemies[i], enemies[i].x + 1, enemies[i].y, Direction::Right)) {
-                enemies[i].x++;
-            }
-            
-        }
-
-        if (playerPositionInMapY < enemies[i].y) {
-
-            if (checkMovement(enemies[i], enemies[i].x, enemies[i].y - 1, Direction::Up)) {
-                enemies[i].y--;
-            }
-            
-        }
-        
-        if (playerPositionInMapY > enemies[i].y) {
-
-            if (checkMovement(enemies[i], enemies[i].x, enemies[i].y + 1, Direction::Down)) {
-                enemies[i].y++;
-            }
-            
-        }
-        
-    }
-    
-}
-
-
-
 // ---------------------------------------------------------------------------------------
 
 
@@ -367,7 +290,7 @@ int main(){
 
     // Initialise the map ..
     
-    tilemap.set(16, 16, Data::mapPixels1);
+    tilemap.set(16, 16, Data::mapPixels);
     tilemap.tiles[TileType::Green] = Data::green16;
     tilemap.tiles[TileType::Tree] = Data::tree16;
     tilemap.tiles[TileType::Grass] = Data::grass16;
@@ -379,19 +302,6 @@ int main(){
     player.x = -20;
     player.y = -50;
     
-    
-    
-    // Position the enemies in a vacant spot ..
-
-    enemies[0].x = 81;
-    enemies[0].y = 49;
-
-    enemies[1].x = 161;
-    enemies[1].y = 49;
-
-    enemies[2].x = 177;
-    enemies[2].y = 100;
-
     
     while (PC::isRunning()) {
         
@@ -406,43 +316,14 @@ int main(){
         handlePlayerMovements();
 
 
-        // Move enemies ..
-
-        handleEnemyMovements();
-
-
         // Render screen ..
 
         tilemap.draw(player.x, player.y);
         
         
-        // Render player and enemies ..
+        // Render player ..
         
         PD::drawBitmapData(Constants::screenCentreX - player.xOffset, Constants::screenCentreY - player.yOffset, player.width, player.height, Data::girl12x15Pixels);
-
-        for (uint8_t i = 0; i < Constants::numberOfEnemies; i++) {
-
-            PD::drawBitmapData(+enemies[i].x + player.x, +enemies[i].y + player.y, enemies[i].width, enemies[i].height, Data::enemy12x15Pixels);
-            
-        }
-
-
-        // Check for collisions between the player and the enemy ..
-
-        for (uint8_t i = 0; i < Constants::numberOfEnemies; i++) {
-
-            if (collide(player, enemies[i])) {
-                
-                PD::setColor(2);
-                PD::fillRect(78, 78, 80, 10);
-                PD::setColor(5);
-                PD::setCursor(80, 80);
-                PD::print("Game Over");
-
-            }
-            
-        }
-        
 
     }
     
