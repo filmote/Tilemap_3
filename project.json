@@ -322,6 +322,24 @@
 		},
 		"/Tilemap_3.bin": {
 			"sdcard": false
+		},
+		"\\Data.h": {
+			"sdcard": false
+		},
+		"\\main.cpp": {
+			"sdcard": false
+		},
+		"\\project.json": {
+			"sdcard": false
+		},
+		"\\My_settings.h": {
+			"sdcard": false
+		},
+		"\\Tilemap_3.bin": {
+			"sdcard": false
+		},
+		"\\Tilemap_3.elf": {
+			"sdcard": false
 		}
 	}
 }
