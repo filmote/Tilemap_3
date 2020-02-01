@@ -19,15 +19,17 @@ namespace Constants {
     const uint8_t tileWidth = 16;
     const uint8_t tileHeight = 16;
     
-    const uint8_t mapTileWidth = 16;                            // Map width in tiles ..
-    const uint8_t mapTileHeight = 16;                           // Map height in tiles ..
+    const uint8_t mapTileWidth = 16;                              // Map width in tiles ..
+    const uint8_t mapTileHeight = 16;                             // Map height in tiles ..
     
-    const uint16_t mapWidth = mapTileWidth * tileWidth;         // 16 tiles of 16 pixels
-    const uint16_t mapHeight = mapTileHeight * tileHeight;      // 16 tiles of 16 pixels
+    const uint16_t worldWidth = mapTileWidth * tileWidth;         // 16 tiles of 16 pixels
+    const uint16_t worldHeight = mapTileHeight * tileHeight;      // 16 tiles of 16 pixels
     
     const uint16_t screenCentreX = PD::width / 2; 
     const uint16_t screenCentreY = PD::height / 2;
 
+    const uint16_t numberOfEnemies = 3;
+    
 }
 
 
@@ -41,7 +43,7 @@ enum TileType {
 	Green = 1,
 	Tree = 2,
 	Grass = 3,
-
+	
 }; 
 
 
@@ -59,30 +61,132 @@ struct Entity {
     
     int16_t x;
     int16_t y;
-    int16_t xOffset;
-    int16_t yOffset;
 
     const uint8_t width = 12;
     const uint8_t height = 15;
-    
-    int16_t getPositionInMapX() { return Constants::screenCentreX - x - xOffset; }
-    int16_t getPositionInMapY() { return Constants::screenCentreY - y - yOffset; }
 
 };
+
+
+struct Player : Entity {
+
+};
+
+
+struct Enemy : Entity {
+
+};
+
 
 
 // ---------------------------------------------------------------------------------------
 
 
 Tilemap tilemap;
-Entity player;
+Player player;
+Enemy enemies[Constants::numberOfEnemies];
+
+
+// ---------------------------------------------------------------------------------------
+
+
+void calculateViewPortPosition(Entity &entity, int16_t &xViewPort, int16_t &yViewPort) {
+    
+    if (entity.x < PD::width / 2) {
+        
+        xViewPort = 0;
+        
+    }
+    else if (entity.x > Constants::worldWidth - PD::width / 2) {
+
+        xViewPort = PD::width - Constants::worldWidth;
+        
+    }
+    else {
+        
+        xViewPort = PD::width / 2 - entity.x;
+
+    }
+    
+    if (entity.y < PD::height / 2) {
+        
+        yViewPort = 0;
+        
+    }
+    else if (entity.y > Constants::worldHeight - PD::height / 2) {
+
+        yViewPort = PD::height - Constants::worldHeight;
+        
+    }
+    else {
+        
+        yViewPort = PD::height / 2 - entity.y;
+
+    }
+    
+}
+
+
+// ---------------------------------------------------------------------------------------
+
+
+void calculatePlayerPosition(Entity &entity, int16_t &xPlayer, int16_t &yPlayer) {
+    
+    if (entity.x < PD::width / 2) {
+        
+        xPlayer = entity.x;
+        
+    }
+    else if (entity.x > Constants::worldWidth - PD::width / 2) {
+
+        xPlayer = entity.x - (Constants::worldWidth - PD::width);
+        
+    }
+    else {
+        
+        xPlayer = PD::width / 2;
+
+    }
+    
+    if (entity.y < PD::height / 2) {
+        
+        yPlayer = entity.y;
+        
+    }
+    else if (entity.y > Constants::worldHeight - PD::height / 2) {
+
+        yPlayer = entity.y - (Constants::worldHeight - PD::height);
+        
+    }
+    else {
+        
+        yPlayer = PD::height / 2;
+
+    }
+
+}
+
+
+
+// ---------------------------------------------------------------------------------------
+//
+//  Do the two entities overlap?
+//
+bool collide(Player player, Enemy enemy) {
+
+    return !(enemy.x                >= player.x + player.width  ||
+             enemy.x + enemy.width  <= player.x                 ||
+             enemy.y                >= player.y + player.height ||
+             enemy.y + enemy.height <= player.y);
+
+}
 
 
 // ---------------------------------------------------------------------------------------
 //
 //  Check to see if the move the entity is about to make is into a green (empty) tile.  As 
-//  the player is 12 x 15 pixels and the tiles are bigger (16 x 16) its possible that the 
-//  player could be straddling two tiles in either direction ..
+//  the player and enemy tiles are 12 x 15 pixels and the tiles are bigger (16 x 16) its 
+//  possible that the entity could be straddling two tiles in either direction ..
 //
 bool checkMovement(Entity &entity, int16_t x, int16_t y, Direction direction) {
 
@@ -127,81 +231,28 @@ bool checkMovement(Entity &entity, int16_t x, int16_t y, Direction direction) {
 }
 
 
-
 // ---------------------------------------------------------------------------------------
 //
 //  Handle the player movements ..
 //
 void handlePlayerMovements() {
 
-    int16_t positionInMapX = player.getPositionInMapX();
-    int16_t positionInMapY = player.getPositionInMapY();
-
     if (PC::buttons.pressed(BTN_LEFT) || PC::buttons.repeat(BTN_LEFT, 1))    { 
 
+        if (player.x > 0 && checkMovement(player, player.x - 1, player.y, Direction::Left)) {
 
-        // Can we move to the left?
-        
-        if (checkMovement(player, positionInMapX - 1, positionInMapY, Direction::Left)) {
+            player.x--;
 
-    
-            // If we are already on the right hand side of the screen, come back to the centre ..
-
-            if (player.xOffset < 0) {     
-                
-                player.xOffset++;
-    
-            }
-            
-            
-            // Otherwise scroll the screen itself if we can ..
-            
-            else if (player.x < 0) {
-                
-                player.x++;
-
-            }
-            
-            
-            // If we cannot scroll the screen, move the player to the left ..
-            
-            else if (player.x <= (PD::width / 2)) {     
-                
-                player.xOffset++;
-
-            }
-            
         }
 
     }
     
     if (PC::buttons.pressed(BTN_RIGHT) || PC::buttons.repeat(BTN_RIGHT, 1))   { 
 
+        if (player.x < Constants::worldWidth && checkMovement(player, player.x + 1, player.y, Direction::Right)) {
 
-        // Can we move to the right?
+            player.x++;
         
-        if (checkMovement(player, positionInMapX + 1, positionInMapY, Direction::Right)) {
-                
-    
-            // If we are already on the left hand side of the screen, come back to the centre ..
-            
-            if (player.xOffset > 0) {
-                player.xOffset--;
-            }
-                 
-            
-            // Otherwise scroll the screen itself if we can ..
-            
-            else if (player.x > (PD::width - Constants::mapWidth) && player.x <= 0) {
-                player.x--;
-            }
-            
-            
-            // If we cannot scroll the screen, move the player to the right ..
-            
-            else if (player.x >= (PD::width - Constants::mapWidth)) {
-                player.xOffset--;
-            }
             
         }
 
@@ -210,66 +261,70 @@ void handlePlayerMovements() {
     
     if (PC::buttons.pressed(BTN_UP) || PC::buttons.repeat(BTN_UP, 1))      { 
 
+        if (player.y > 0 && checkMovement(player, player.x, player.y - 1, Direction::Up)) {
 
-        // Can we move up?
-        
-        if (checkMovement(player, positionInMapX, positionInMapY - 1, Direction::Up)) {
+            player.y--;
 
-            
-            // If we are already in the bottom section of the screen, come back to the centre ..
-            
-            if (player.yOffset < 0) {                                  
-                player.yOffset++;
-            }
-            
-            
-            // Otherwise scroll the screen itself if we can ..
-            
-            else if (player.y < 0) {
-                player.y++;
-            }
-            
-            
-            // If we cannot scroll the screen, move the player up ..
-            
-            else if (player.y <= (PD::height / 2)) {     
-                player.yOffset++;
-            }
-        
         }
         
     }
     
     if (PC::buttons.pressed(BTN_DOWN) || PC::buttons.repeat(BTN_DOWN, 1))    { 
 
+        if (player.y < Constants::worldHeight && checkMovement(player, player.x, player.y + 1, Direction::Down)) {
 
-        // Can we move down?
-        
-        if (checkMovement(player, positionInMapX, positionInMapY + 1, Direction::Down)) {
+            player.y++;
+            
+        }
+
+    }
+    
+}
+
+
+// ---------------------------------------------------------------------------------------
+//
+//  Handle the enemy movements ..
+//
+void handleEnemyMovements() {
 
     
-            // If we are already in the top section of the screen, come back to the centre ..
-            
-            if (player.yOffset > 0) {
-                player.yOffset--;
-            }
-                 
-            
-            // Otherwise scroll the screen itself if we can ..
-            
-            else if (player.y > (PD::height - Constants::mapHeight) && player.y <= 0) {
-                player.y--;
+    // Move each enemy individually ..
+    
+    for (uint8_t i = 0; i < Constants::numberOfEnemies; i++) {
+
+        if (player.x < enemies[i].x) {
+
+            if (checkMovement(enemies[i], enemies[i].x - 1, enemies[i].y, Direction::Left)) {
+                enemies[i].x--;
             }
             
-            
-            // If we cannot scroll the screen, move the player down ..
-            
-            else if (player.y >= (PD::height - Constants::mapHeight)) {
-                player.yOffset--;
+        }
+        
+        if (player.x > enemies[i].x) {
+
+            if (checkMovement(enemies[i], enemies[i].x + 1, enemies[i].y, Direction::Right)) {
+                enemies[i].x++;
             }
             
         }
 
+        if (player.y < enemies[i].y) {
+
+            if (checkMovement(enemies[i], enemies[i].x, enemies[i].y - 1, Direction::Up)) {
+                enemies[i].y--;
+            }
+            
+        }
+        
+        if (player.y > enemies[i].y) {
+
+            if (checkMovement(enemies[i], enemies[i].x, enemies[i].y + 1, Direction::Down)) {
+                enemies[i].y++;
+            }
+            
+        }
+        
     }
     
 }
@@ -281,11 +336,10 @@ void handlePlayerMovements() {
 int main(){
 
     PC::begin();
-    PD::setFont(fontC64);
     PD::loadRGBPalette(palettePico);   
     PD::persistence = true;
     PD::invisiblecolor = 12;
-
+    PD::setFont(fontC64);
 
 
     // Initialise the map ..
@@ -299,9 +353,22 @@ int main(){
 
     // Position the player into a vacant spot on the map ..
     
-    player.x = -20;
-    player.y = -50;
+    player.x = 48;
+    player.y = 48;
     
+    
+    
+    // Position the enemies in a vacant spot ..
+
+    enemies[0].x = 81;
+    enemies[0].y = 159;
+
+    enemies[1].x = 161;
+    enemies[1].y = 49;
+
+    enemies[2].x = 161;
+    enemies[2].y = 160;
+
     
     while (PC::isRunning()) {
         
@@ -310,20 +377,59 @@ int main(){
         PC::buttons.pollButtons();        
 
 
-
         // Handle player movements ..
 
         handlePlayerMovements();
 
 
+        // Move enemies ..
+
+        handleEnemyMovements();
+
+
         // Render screen ..
 
-        tilemap.draw(player.x, player.y);
+        int16_t xViewPort;
+        int16_t yViewPort;
         
+        calculateViewPortPosition(player, xViewPort, yViewPort);
+        tilemap.draw(xViewPort, yViewPort);
+
         
         // Render player ..
         
-        PD::drawBitmapData(Constants::screenCentreX - player.xOffset, Constants::screenCentreY - player.yOffset, player.width, player.height, Data::girl12x15Pixels);
+        int16_t xPlayer;
+        int16_t yPlayer;
+        
+        calculatePlayerPosition(player, xPlayer, yPlayer);
+        PD::drawBitmapData(xPlayer, yPlayer, 12, 15, Data::girl12x15Pixels);        
+        
+        
+        // Render enemies ..
+
+        for (uint8_t i = 0; i < Constants::numberOfEnemies; i++) {
+
+            PD::drawBitmapData(enemies[i].x + xViewPort, enemies[i].y + yViewPort, enemies[i].width, enemies[i].height, Data::enemy12x15Pixels);
+            
+        }
+
+
+        // Check for collisions between the player and the enemy ..
+
+        for (uint8_t i = 0; i < Constants::numberOfEnemies; i++) {
+
+            if (collide(player, enemies[i])) {
+                
+                PD::setColor(2);
+                PD::fillRect(78, 78, 80, 10);
+                PD::setColor(0, 2);
+                PD::setCursor(80, 80);
+                PD::print("Game Over");
+
+            }
+            
+        }
+        
 
     }
     
