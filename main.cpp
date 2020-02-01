@@ -281,10 +281,10 @@ void handlePlayerMovements() {
 int main(){
 
     PC::begin();
-    PD::persistence = true;
-    PD::invisiblecolor = 0;
-    PD::loadRGBPalette(palettePico);   
     PD::setFont(fontC64);
+    PD::loadRGBPalette(palettePico);   
+    PD::persistence = true;
+    PD::invisiblecolor = 12;
 
 
 
