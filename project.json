@@ -334,6 +334,15 @@
 		},
 		"/Tilemap_4.bin": {
 			"sdcard": false
+		},
+		"\\Tilemap_3.bin": {
+			"sdcard": false
+		},
+		"\\Tilemap_3.elf": {
+			"sdcard": false
+		},
+		"\\Tilemap_3.bin.1.png": {
+			"sdcard": false
 		}
 	}
 }
